@@ -3,62 +3,27 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"regexp"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/gorilla/mux"
+	"github.com/rhaseven7h/apitraining/controllers"
 )
 
-type ProductsHandler struct{}
-
-func (ph ProductsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "In products!")
-}
-
-type ServicesHandler struct{}
-
-func (ph ServicesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "In services!")
-}
-
-type GenericHandler struct{}
-
-func (gh GenericHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	pathstr := r.URL.Path
-
-	ph := &ProductsHandler{}
-	sh := &ServicesHandler{}
-
-	ok, err := regexp.MatchString("product", pathstr)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "error matching routes at products: %s", err.Error())
-		return
-	}
-
-	if ok {
-		ph.ServeHTTP(w, r)
-		return
-	}
-
-	ok, err = regexp.MatchString("service", pathstr)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "error matching routes at services: %s", err.Error())
-		return
-	}
-
-	if ok {
-		sh.ServeHTTP(w, r)
-		return
-	}
-
-	w.WriteHeader(http.StatusNotFound)
-	fmt.Fprintf(w, "no route found for: %s", pathstr)
-}
-
 func main() {
-	bindAddress := "0.0.0.0:8080"
-	gh := &GenericHandler{}
+	bindAddress := "0.0.0.0:9099"
+
+	logger := logrus.New()
+
+	m := mux.NewRouter()
+
+	productsController := controllers.NewProductsController(45)
+	m.HandleFunc("/products", productsController.List).Methods("GET")
+	m.HandleFunc("/products/{id}", productsController.Get).Methods("GET")
+
+	servicesController := controllers.NewServicesController("ooyala!", logger)
+	m.HandleFunc("/services", servicesController.List)
+	m.HandleFunc("/services/{id}", servicesController.Get)
+
 	fmt.Printf("Server started, listening at %s\n", bindAddress)
-	http.ListenAndServe(bindAddress, gh)
+	http.ListenAndServe(bindAddress, m)
 }
