@@ -1,9 +1,7 @@
 package loggingadapter
 
-import "github.com/Sirupsen/logrus"
-
 type OOLogger interface {
-	WithField(string, interface{}) *logrus.Entry
+	WithField(string, interface{}) OOLogger
 	Info(...interface{})
 	Error(...interface{})
 }
